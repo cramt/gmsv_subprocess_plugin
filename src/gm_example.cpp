@@ -34,6 +34,12 @@ public:
 	void send(string line) {
 		in << line << endl;
 	}
+	bool isRunning() {
+		return nodeProcess.running();
+	}
+	void kill() {
+		nodeProcess.terminate();
+	}
 private:
 	void std_in_reader_function() {
 		std::string line;
@@ -47,33 +53,31 @@ private:
 	ipstream out;
 };
 
-struct NFGSSendable {
-	string command;
-	string json;
-};
-
 class nodejs {
 public:
 	void init(string jsFile) {
 		nodeProcess.init(jsFile);
 		nodeProcess.on_std_in = [this](string line) {
-			ptree pt;
-			std::istringstream is(line);
-			read_json(is, pt);
-			NFGSSendable gotten;
-			gotten.command = pt.get<string>("command");
-			pt.erase("command");
-			std::ostringstream buf;
-			write_json(buf, pt, false);
-			gotten.json = buf.str();
-			this->sent.push_back(gotten);
-
+			this->sent.push_back(line);
 		};
 	}
 	void wait() {
 		this->nodeProcess.wait();
 	}
-	list<NFGSSendable> sent;
+	void send(string data) {
+		if (this->isRunning()) {
+			this->nodeProcess.send(data);
+		}
+	}
+	void kill() {
+		if (this->isRunning()) {
+			this->nodeProcess.kill();
+		}
+	}
+	bool isRunning() {
+		return this->nodeProcess.isRunning();
+	}
+	list<string> sent;
 private:
 	nodejs_wrapper nodeProcess;
 };
@@ -85,46 +89,20 @@ private:
 
 using namespace GarrysMod::Lua;
 
-struct Environment {
-	CFunc hook;
-	nodejs* node;
-};
-
-list<Environment> allNodeEnvironment;
-
-LUA_FUNCTION(Think) {
-
-	for (list<Environment>::iterator nodeEnv = allNodeEnvironment.begin(); nodeEnv != allNodeEnvironment.end(); ++nodeEnv) {
-		for (list<NFGSSendable>::iterator commands = nodeEnv->node->sent.begin(); commands != nodeEnv->node->sent.end(); ++commands) {
-			if (commands->command == "print") {
-
-			}
-			else if (commands->command == "event") {
-				LUA->PushCFunction(nodeEnv->hook);
-				LUA->PushString(commands->json.c_str());
-				LUA->Call(2, 0);
-				nodeEnv->node->sent.remove(*commands);
-			}
-			else if (commands->command == "exception") {
-
-			}
-		}
-	}
-	return 1;
-}
-LUA_FUNCTION(CallBackTest) {
+LUA_FUNCTION(callBackTest) {
 
 	if (LUA->IsType(1, Type::FUNCTION)) {
 		CFunc func = LUA->GetCFunction(1);
 		LUA->PushCFunction(func);
 		LUA->Call(1, 0);
-		
+
 		return 1;
 	}
 
 
 	return 0;
 }
+
 LUA_FUNCTION(test) {
 	if (LUA->IsType(1, Type::NUMBER)) {
 		char strOut[512];
@@ -136,16 +114,45 @@ LUA_FUNCTION(test) {
 	LUA->PushString("This string is returned");
 	return 1;
 }
+
+LUA_FUNCTION(think) {
+	if (LUA->IsType(1, Type::STRING)) {
+		const char* ptr_as_string = LUA->GetString(1);
+		unsigned long ptr_as_int = std::stoul(ptr_as_string, nullptr, 0);
+		nodejs* nodeEnv = reinterpret_cast<nodejs*>(ptr_as_int);
+		if (!nodeEnv->isRunning()) {
+			LUA->PushBool(false);
+			return 1;
+		}
+		LUA->CreateTable();
+		unsigned int i = 1;
+		for (list<string>::iterator com = nodeEnv->sent.begin(); com != nodeEnv->sent.end(); ++com) {
+			LUA->PushString(com->c_str());
+			LUA->SetField(-2, to_string(i).c_str());
+			i++;
+		}
+		nodeEnv->sent.clear();
+		return 0;
+	}
+	return 1;
+}
+
+LUA_FUNCTION(kill) {
+	const char* ptr_as_string = LUA->GetString(1);
+	unsigned long ptr_as_int = std::stoul(ptr_as_string, nullptr, 0);
+	nodejs* nodeEnv = reinterpret_cast<nodejs*>(ptr_as_int);
+	nodeEnv->kill();
+	nodeEnv = NULL;
+}
+
 LUA_FUNCTION(instantiateNodeEnv) {
 	if (LUA->IsType(1, Type::STRING) && LUA->IsType(2, Type::FUNCTION)) {
 		string path = LUA->GetString(1);
 		CFunc hook = LUA->GetCFunction(2);
-		nodejs nodeEnv;
-		nodeEnv.init(path);
-		Environment env;
-		env.hook = hook;
-		env.node = &nodeEnv;
-		LUA->PushString(reinterpret_cast<int>(env.node) + "");
+		nodejs node;
+		nodejs* nodePTR = &node;
+		nodePTR->init(path);
+		LUA->PushString(to_string(reinterpret_cast<unsigned long>(nodePTR)).c_str());
 		return 1;
 	}
 	LUA->PushNil();
@@ -165,11 +172,14 @@ GMOD_MODULE_OPEN() {
 	LUA->PushCFunction(test);
 	LUA->SetField(-2, "test");
 
-	LUA->PushCFunction(CallBackTest);
+	LUA->PushCFunction(callBackTest);
 	LUA->SetField(-2, "callbackTest");
 
-	LUA->PushCFunction(Think);
+	LUA->PushCFunction(think);
 	LUA->SetField(-2, "think");
+
+	LUA->PushCFunction(instantiateNodeEnv);
+	LUA->SetField(-2, "instantiateNodeEnv");
 
 	return 0;
 }
