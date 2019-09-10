@@ -89,6 +89,12 @@ private:
 
 using namespace GarrysMod::Lua;
 
+nodejs* getNodeEnv(const char* ptr) {
+	unsigned long ptr_as_int = std::stoul(ptr, nullptr, 0);
+	nodejs* nodeEnv = reinterpret_cast<nodejs*>(ptr_as_int);
+	return nodeEnv;
+}
+
 LUA_FUNCTION(callBackTest) {
 
 	if (LUA->IsType(1, Type::FUNCTION)) {
@@ -117,10 +123,7 @@ LUA_FUNCTION(test) {
 
 LUA_FUNCTION(think) {
 	if (LUA->IsType(1, Type::STRING)) {
-		const char* ptr_as_string = LUA->GetString(1);
-		unsigned long ptr_as_int = std::stoul(ptr_as_string, nullptr, 0);
-		nodejs* nodeEnv = reinterpret_cast<nodejs*>(ptr_as_int);
-		delete ptr_as_string;
+		nodejs* nodeEnv = getNodeEnv(LUA->GetString(1));
 		if (!nodeEnv->isRunning()) {
 			LUA->PushBool(false);
 			return 1;
@@ -138,24 +141,32 @@ LUA_FUNCTION(think) {
 	return 1;
 }
 
+LUA_FUNCTION(send) {
+	if (LUA->IsType(1, Type::STRING) && LUA->IsType(2, Type::STRING)) {
+		nodejs* nodeEnv = getNodeEnv(LUA->GetString(1));
+		string message = LUA->GetString(2);
+		nodeEnv->send(message);
+		return 0;
+	}
+	return 1;
+}
+
 LUA_FUNCTION(kill) {
-	const char* ptr_as_string = LUA->GetString(1);
-	unsigned long ptr_as_int = std::stoul(ptr_as_string, nullptr, 0);
-	nodejs* nodeEnv = reinterpret_cast<nodejs*>(ptr_as_int);
-	nodeEnv->kill();
-	delete nodeEnv;
-	delete ptr_as_string;
-	return 0;
+	if (LUA->IsType(1, Type::STRING)) {
+		nodejs* nodeEnv = getNodeEnv(LUA->GetString(1));
+		nodeEnv->kill();
+		delete nodeEnv;
+		return 0;
+	}
+	return 1;
 }
 
 LUA_FUNCTION(instantiateNodeEnv) {
-	if (LUA->IsType(1, Type::STRING) && LUA->IsType(2, Type::FUNCTION)) {
+	if (LUA->IsType(1, Type::STRING)) {
 		string path = LUA->GetString(1);
-		CFunc hook = LUA->GetCFunction(2);
-		nodejs node;
-		nodejs* nodePTR = &node;
-		nodePTR->init(path);
-		LUA->PushString(to_string(reinterpret_cast<unsigned long>(nodePTR)).c_str());
+		nodejs* node = new nodejs;
+		node->init(path);
+		LUA->PushString(to_string(reinterpret_cast<unsigned long>(node)).c_str());
 		return 1;
 	}
 	LUA->PushNil();
@@ -183,6 +194,9 @@ GMOD_MODULE_OPEN() {
 
 	LUA->PushCFunction(instantiateNodeEnv);
 	LUA->SetField(-2, "instantiateNodeEnv");
+
+	LUA->PushCFunction(kill);
+	LUA->SetField(-2, "kill");
 
 	return 0;
 }
