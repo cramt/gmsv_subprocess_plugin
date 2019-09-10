@@ -99,7 +99,7 @@
     <ClInclude Include="..\..\..\include\GarrysMod\Lua\UserData.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\gm_example.cpp" />
+    <ClCompile Include="src\nfgs_plugin.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

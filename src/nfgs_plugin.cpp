@@ -145,6 +145,7 @@ LUA_FUNCTION(kill) {
 	nodeEnv->kill();
 	delete nodeEnv;
 	delete ptr_as_string;
+	return 0;
 }
 
 LUA_FUNCTION(instantiateNodeEnv) {
