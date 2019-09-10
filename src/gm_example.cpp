@@ -120,6 +120,7 @@ LUA_FUNCTION(think) {
 		const char* ptr_as_string = LUA->GetString(1);
 		unsigned long ptr_as_int = std::stoul(ptr_as_string, nullptr, 0);
 		nodejs* nodeEnv = reinterpret_cast<nodejs*>(ptr_as_int);
+		delete ptr_as_string;
 		if (!nodeEnv->isRunning()) {
 			LUA->PushBool(false);
 			return 1;
@@ -142,7 +143,8 @@ LUA_FUNCTION(kill) {
 	unsigned long ptr_as_int = std::stoul(ptr_as_string, nullptr, 0);
 	nodejs* nodeEnv = reinterpret_cast<nodejs*>(ptr_as_int);
 	nodeEnv->kill();
-	nodeEnv = NULL;
+	delete nodeEnv;
+	delete ptr_as_string;
 }
 
 LUA_FUNCTION(instantiateNodeEnv) {
