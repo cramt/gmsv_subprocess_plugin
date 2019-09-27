@@ -123,21 +123,29 @@ LUA_FUNCTION(test) {
 
 LUA_FUNCTION(think) {
 	if (LUA->IsType(1, Type::STRING)) {
-		nodejs* nodeEnv = getNodeEnv(LUA->GetString(1));
-		if (!nodeEnv->isRunning()) {
-			LUA->PushBool(false);
+		try {
+			nodejs* nodeEnv = getNodeEnv(LUA->GetString(1));
+			if (!nodeEnv->isRunning()) {
+				LUA->PushBool(false);
+				return 1;
+			}
+			LUA->CreateTable();
+			unsigned int i = 1;
+			for (list<string>::iterator com = nodeEnv->sent.begin(); com != nodeEnv->sent.end(); ++com) {
+				LUA->PushString(com->c_str());
+				LUA->SetField(-2, to_string(i).c_str());
+				i++;
+			}
+			nodeEnv->sent.clear();
 			return 1;
 		}
-		LUA->CreateTable();
-		unsigned int i = 1;
-		for (list<string>::iterator com = nodeEnv->sent.begin(); com != nodeEnv->sent.end(); ++com) {
-			LUA->PushString(com->c_str());
-			LUA->SetField(-2, to_string(i).c_str());
-			i++;
+		catch (int e) {
+			LUA->PushString("wtf1");
+			return 1;
 		}
-		nodeEnv->sent.clear();
-		return 0;
+
 	}
+	LUA->PushString("wtf2");
 	return 1;
 }
 
@@ -155,6 +163,7 @@ LUA_FUNCTION(kill) {
 	if (LUA->IsType(1, Type::STRING)) {
 		nodejs* nodeEnv = getNodeEnv(LUA->GetString(1));
 		nodeEnv->kill();
+		nodeEnv = new nodejs;
 		delete nodeEnv;
 		return 0;
 	}
@@ -197,6 +206,9 @@ GMOD_MODULE_OPEN() {
 
 	LUA->PushCFunction(kill);
 	LUA->SetField(-2, "kill");
+
+	LUA->PushCFunction(send);
+	LUA->SetField(-2, "send");
 
 	return 0;
 }
