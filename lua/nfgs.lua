@@ -1,11 +1,26 @@
 require("nfgs_plugin")
 
-function initNode(path)
+__NFGS = __NFGS or {}
+for i, v in pairs(__NFGS) do
+    v:kill()
+end
+
+function initNode(path, options)
+    options = options or {}
+    options.commandLineArguments = options.commandLineArguments or {}
+    if(options.debugPort) then
+        table.insert(options.commandLineArguments, "--inspect-brk=" .. options.debugPort)
+    end
+    local cmdArg = table.concat(options.commandLineArguments, " ")
+    if(cmdArg ~= "") then
+        cmdArg = cmdArg .. " ";
+    end
     local returnObj = {
         listeners = {},
-        ptr = ___NFGS___WRAPPER___TABLE___.instantiateNodeEnv(path),
+        ptr = ___NFGS___WRAPPER___TABLE___.instantiateNodeEnv("node " .. cmdArg .. path),
         running = true,
     }
+    __NFGS[returnObj.ptr] = returnObj;
     hook.Add("Tick", returnObj.ptr, function()
         if(returnObj.running) then
             returnObj:think()
@@ -60,5 +75,3 @@ function initNode(path)
     end
     return returnObj;
 end
-
-
