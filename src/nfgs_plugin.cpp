@@ -18,13 +18,13 @@ using boost::property_tree::ptree;
 using boost::property_tree::read_json;
 using boost::property_tree::write_json;
 
-class nodejs_wrapper {
+class process_wrapper {
 public:
-	void init(string jsFile) {
+	void init(string command) {
 		this->on_std_in = [](string line) {
 
 		};
-		this->nodeProcess = child("node " + jsFile, std_out > this->out, std_in < this->in);
+		this->nodeProcess = child(command, std_out > this->out, std_in < this->in);
 		this->std_in_reader = thread([this] {this->std_in_reader_function(); });
 	}
 	void wait() {
@@ -79,7 +79,7 @@ public:
 	}
 	list<string> sent;
 private:
-	nodejs_wrapper nodeProcess;
+	process_wrapper nodeProcess;
 };
 
 
@@ -95,58 +95,24 @@ nodejs* getNodeEnv(const char* ptr) {
 	return nodeEnv;
 }
 
-LUA_FUNCTION(callBackTest) {
-
-	if (LUA->IsType(1, Type::FUNCTION)) {
-		CFunc func = LUA->GetCFunction(1);
-		LUA->PushCFunction(func);
-		LUA->Call(1, 0);
-
-		return 1;
-	}
-
-
-	return 0;
-}
-
-LUA_FUNCTION(test) {
-	if (LUA->IsType(1, Type::NUMBER)) {
-		char strOut[512];
-		double fNumber = LUA->GetNumber(1);
-		sprintf_s(strOut, "Thanks for the number - I love %f!!", fNumber);
-		LUA->PushString(strOut);
-		return 1;
-	}
-	LUA->PushString("This string is returned");
-	return 1;
-}
-
 LUA_FUNCTION(think) {
 	if (LUA->IsType(1, Type::STRING)) {
-		try {
-			nodejs* nodeEnv = getNodeEnv(LUA->GetString(1));
-			if (!nodeEnv->isRunning()) {
-				LUA->PushBool(false);
-				return 1;
-			}
-			LUA->CreateTable();
-			unsigned int i = 1;
-			for (list<string>::iterator com = nodeEnv->sent.begin(); com != nodeEnv->sent.end(); ++com) {
-				LUA->PushString(com->c_str());
-				LUA->SetField(-2, to_string(i).c_str());
-				i++;
-			}
-			nodeEnv->sent.clear();
+		nodejs* nodeEnv = getNodeEnv(LUA->GetString(1));
+		if (!nodeEnv->isRunning()) {
+			LUA->PushBool(false);
 			return 1;
 		}
-		catch (int e) {
-			LUA->PushString("wtf1");
-			return 1;
+		LUA->CreateTable();
+		unsigned int i = 1;
+		for (list<string>::iterator com = nodeEnv->sent.begin(); com != nodeEnv->sent.end(); ++com) {
+			LUA->PushString(com->c_str());
+			LUA->SetField(-2, to_string(i).c_str());
+			i++;
 		}
-
+		nodeEnv->sent.clear();
+		return 1;
 	}
-	LUA->PushString("wtf2");
-	return 1;
+	return 0;
 }
 
 LUA_FUNCTION(send) {
@@ -191,12 +157,6 @@ GMOD_MODULE_OPEN() {
 	LUA->CreateTable();
 	LUA->SetTable(-3);
 	LUA->GetField(-1, shared_object);
-
-	LUA->PushCFunction(test);
-	LUA->SetField(-2, "test");
-
-	LUA->PushCFunction(callBackTest);
-	LUA->SetField(-2, "callbackTest");
 
 	LUA->PushCFunction(think);
 	LUA->SetField(-2, "think");
