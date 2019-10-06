@@ -29,6 +29,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\nfgs_plugin.cpp" />
+    <ClCompile Include="src\subprocess_plugin.cpp" />
   </ItemGroup>
 </Project>

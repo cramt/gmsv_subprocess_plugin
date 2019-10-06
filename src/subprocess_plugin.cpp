@@ -1,22 +1,9 @@
 #include "GarrysMod\Lua\Interface.h"
 #include <stdio.h> 
-#include <cstdint>
-#include <list> 
-#include <iterator> 
-#include <iostream>
 #include <boost/process.hpp>
-#include <string>
-#include <thread>
-#include <sstream>
-#include <map>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
 
 using namespace boost::process;
 using namespace std;
-using boost::property_tree::ptree;
-using boost::property_tree::read_json;
-using boost::property_tree::write_json;
 
 class process_wrapper {
 public:
@@ -53,7 +40,7 @@ private:
 	ipstream out;
 };
 
-class nodejs {
+class curr_process {
 public:
 	void init(string jsFile) {
 		nodeProcess.init(jsFile);
@@ -89,15 +76,15 @@ private:
 
 using namespace GarrysMod::Lua;
 
-nodejs* getNodeEnv(const char* ptr) {
+curr_process* getNodeEnv(const char* ptr) {
 	unsigned long ptr_as_int = std::stoul(ptr, nullptr, 0);
-	nodejs* nodeEnv = reinterpret_cast<nodejs*>(ptr_as_int);
+	curr_process* nodeEnv = reinterpret_cast<curr_process*>(ptr_as_int);
 	return nodeEnv;
 }
 
 LUA_FUNCTION(think) {
 	if (LUA->IsType(1, Type::STRING)) {
-		nodejs* nodeEnv = getNodeEnv(LUA->GetString(1));
+		curr_process* nodeEnv = getNodeEnv(LUA->GetString(1));
 		if (!nodeEnv->isRunning()) {
 			LUA->PushBool(false);
 			return 1;
@@ -117,7 +104,7 @@ LUA_FUNCTION(think) {
 
 LUA_FUNCTION(send) {
 	if (LUA->IsType(1, Type::STRING) && LUA->IsType(2, Type::STRING)) {
-		nodejs* nodeEnv = getNodeEnv(LUA->GetString(1));
+		curr_process* nodeEnv = getNodeEnv(LUA->GetString(1));
 		string message = LUA->GetString(2);
 		nodeEnv->send(message);
 		return 0;
@@ -127,19 +114,19 @@ LUA_FUNCTION(send) {
 
 LUA_FUNCTION(kill) {
 	if (LUA->IsType(1, Type::STRING)) {
-		nodejs* nodeEnv = getNodeEnv(LUA->GetString(1));
+		curr_process* nodeEnv = getNodeEnv(LUA->GetString(1));
 		nodeEnv->kill();
-		nodeEnv = new nodejs;
+		nodeEnv = new curr_process;
 		delete nodeEnv;
 		return 0;
 	}
 	return 1;
 }
 
-LUA_FUNCTION(instantiateNodeEnv) {
+LUA_FUNCTION(instantiate) {
 	if (LUA->IsType(1, Type::STRING)) {
 		string path = LUA->GetString(1);
-		nodejs* node = new nodejs;
+		curr_process* node = new curr_process;
 		node->init(path);
 		LUA->PushString(to_string(reinterpret_cast<unsigned long>(node)).c_str());
 		return 1;
@@ -150,7 +137,7 @@ LUA_FUNCTION(instantiateNodeEnv) {
 
 GMOD_MODULE_OPEN() {
 
-	const char* shared_object = "___NFGS___WRAPPER___TABLE___";
+	const char* shared_object = "___SUBPROCESS___WRAPPER___TABLE___";
 
 	LUA->PushSpecial(SPECIAL_GLOB);
 	LUA->PushString(shared_object);
@@ -161,8 +148,8 @@ GMOD_MODULE_OPEN() {
 	LUA->PushCFunction(think);
 	LUA->SetField(-2, "think");
 
-	LUA->PushCFunction(instantiateNodeEnv);
-	LUA->SetField(-2, "instantiateNodeEnv");
+	LUA->PushCFunction(instantiate);
+	LUA->SetField(-2, "instantiate");
 
 	LUA->PushCFunction(kill);
 	LUA->SetField(-2, "kill");
