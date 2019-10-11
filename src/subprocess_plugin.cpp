@@ -34,7 +34,9 @@ public:
 	void kill() {
 		this->should_be_killed = true;
 		this->std_in_reader.join();
-		process.terminate();
+		if (this->process.running()) {
+			process.terminate();
+		}
 	}
 private:
 	atomic<bool> should_be_killed = false;
@@ -83,9 +85,7 @@ public:
 		}
 	}
 	void kill() {
-		if (this->isRunning()) {
 			this->process.kill();
-		}
 	}
 	bool isRunning() {
 		return this->process.isRunning();
@@ -150,7 +150,6 @@ LUA_FUNCTION(kill) {
 	if (LUA->IsType(1, Type::STRING)) {
 		curr_process* proc = getProcEnv(LUA->GetString(1));
 		proc->kill();
-		proc = new curr_process;
 		delete proc;
 		return 0;
 	}
