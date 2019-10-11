@@ -23,6 +23,7 @@ const deleteFolderRecursive = function (path) {
     }
 };
 
+/*
 const luaFiles = fs.readdirSync("./lua/")
 const luaNfgsPath = path.resolve(gmodServerLua, "autorun")
 if (fs.existsSync(luaNfgsPath) && fs.statSync(luaNfgsPath).isDirectory()) {
@@ -32,6 +33,7 @@ fs.mkdirSync(luaNfgsPath)
 luaFiles.forEach(x => {
     copyFile(path.resolve("lua", x), path.resolve(luaNfgsPath, x))
 })
+*/
 
 
 const pluginPath = path.resolve(gmodServerLua, "bin")
@@ -39,6 +41,6 @@ if (fs.existsSync(pluginPath) && fs.statSync(pluginPath).isDirectory()) {
     deleteFolderRecursive(pluginPath)
 }
 fs.mkdirSync(pluginPath)
-copyFile("build/gmsv_example_win32.dll", path.resolve(pluginPath, "gmsv_nfgs_plugin_win32.dll"))
+copyFile("build/gmsv_subprocess_plugin_win32.dll", path.resolve(pluginPath, "gmsv_subprocess_plugin_win32.dll"))
 
 exec(path.resolve(gmodServer, "bat_sandbox.bat"), { cwd: gmodServer })
