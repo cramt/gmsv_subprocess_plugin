@@ -95,7 +95,7 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>C:\Users\madsc\Desktop\nfgs_plugin\include;C:\Program Files\boost_1_71_0</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;C:\Program Files\boost_1_71_0</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
     </ClCompile>

@@ -33,6 +33,7 @@ public:
 	}
 	void kill() {
 		this->should_be_killed = true;
+		this->std_err_reader.join();
 		this->std_in_reader.join();
 		if (this->process.running()) {
 			process.terminate();
