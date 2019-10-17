@@ -110,6 +110,7 @@ curr_process* getProcEnv(const char* ptr) {
 }
 
 LUA_FUNCTION(think) {
+	
 	if (LUA->IsType(1, Type::STRING)) {
 		curr_process* procEnv = getProcEnv(LUA->GetString(1));
 		LUA->CreateTable();

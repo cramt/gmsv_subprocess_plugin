@@ -73,6 +73,7 @@
     <IntDir>obj\Debug\</IntDir>
     <TargetName>gmsv_subprocess_plugin_win32</TargetName>
     <TargetExt>.dll</TargetExt>
+    <CustomBuildAfterTargets />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetName>gmsv_example_win32</TargetName>
@@ -105,6 +106,16 @@
       <ImportLibrary>..\..\build\gmsv_example_win32.lib</ImportLibrary>
       <AdditionalLibraryDirectories>C:\Program Files\boost_1_71_0\stage\lib</AdditionalLibraryDirectories>
     </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <RootFolder>.</RootFolder>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>node run.js</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>

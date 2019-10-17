@@ -1,8 +1,8 @@
 const fs = require("fs")
 const path = require("path")
 const exec = require('child_process').exec
-
-const gmodServer = "C:\\my_garrysmod_server"
+const config = require("./config.json")
+const gmodServer = config.srcdsPath
 const gmodServerLua = path.resolve(gmodServer, "garrysmod\\lua")
 
 const copyFile = (from, to) => {
@@ -23,18 +23,6 @@ const deleteFolderRecursive = function (path) {
     }
 };
 
-/*
-const luaFiles = fs.readdirSync("./lua/")
-const luaNfgsPath = path.resolve(gmodServerLua, "autorun")
-if (fs.existsSync(luaNfgsPath) && fs.statSync(luaNfgsPath).isDirectory()) {
-    deleteFolderRecursive(luaNfgsPath)
-}
-fs.mkdirSync(luaNfgsPath)
-luaFiles.forEach(x => {
-    copyFile(path.resolve("lua", x), path.resolve(luaNfgsPath, x))
-})
-*/
-
 
 const pluginPath = path.resolve(gmodServerLua, "bin")
 if (fs.existsSync(pluginPath) && fs.statSync(pluginPath).isDirectory()) {
@@ -43,4 +31,6 @@ if (fs.existsSync(pluginPath) && fs.statSync(pluginPath).isDirectory()) {
 fs.mkdirSync(pluginPath)
 copyFile("build/gmsv_subprocess_plugin_win32.dll", path.resolve(pluginPath, "gmsv_subprocess_plugin_win32.dll"))
 
-exec(path.resolve(gmodServer, "bat_sandbox.bat"), { cwd: gmodServer })
+exec(path.resolve(gmodServer, "srcds.exe -console -game garrysmod +map gm_construct +maxplayers 127 +gamemode sandbox -port 27026 -insecure"), {
+    cwd: gmodServer,
+})
